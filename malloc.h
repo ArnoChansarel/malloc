@@ -19,9 +19,9 @@
 typedef struct s_chunk_header {
 
     size_t                  size;
-    void                    *chunk;
     bool                    is_free;
     struct t_chunk_header   *next;
+    char                    data[];
 
 } t_chunk_header; // MIGHT NOT USE TYPEDEF HERE
 
