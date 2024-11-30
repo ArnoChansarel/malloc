@@ -30,86 +30,123 @@ static t_memory_zone *create_zone(size_t t) {
         return NULL;
     }
 
-    zone->type = "tiny";
+    zone->type = TINY;
     zone->size_total = total_size - sizeof(t_memory_zone);
     zone->next = NULL;//          SONT MIS A NULL MAIS POUR ALLOCATION DOIT FAIRE zone + sizeof(*next);
     zone->base_block = NULL;
-    printf("Access ?\n");
 
     return (zone);
 
 }
 
-// add_zone(), add a zone to the linked list
 static void     add_zone(t_memory_zone *zone) {
-    base = zone;
+    
+    t_memory_zone *head = NULL;
+    int i = 0;
+
+    if (base == NULL) {
+        base = zone;
+    } 
+    else {
+        head = base;
+        while (head->next) {
+            i++;
+            head = head->next;
+        }
+        head->next = zone;
+    }
+    printf("Memory zone added at linkedlist index [%d]\n", i);
+    return;
 }
 
-static t_memory_zone *get_zone(size_t t) {
+static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
     
-    (void)t;
-    // to implement.
-    
+    (void)t;// servira a check la bonne zone
+    t_memory_zone *head = base;
+
+    if (head == NULL) {
+        printf("No zone found\n");
+        return NULL;
+    }
+
+    do {
+        if ((size_t)head->type == alloc_type) {
+            printf("A zone has been found, returning.\n");//         it is not good if list has more than 1 element
+            return (head);
+        }
+        else {
+            head = head->next;
+        }
+    }  while (head->next);
+
     return NULL;
 }
 
-static t_chunk_header *init_chunk_header(size_t t) {
-
-    t_chunk_header *chunk = NULL;
+static void init_chunk_header(t_chunk_header *chunk, size_t t) {
 
     chunk->size = t;
     chunk->is_free = false;
     chunk->next = NULL;
 
-    return chunk;
+    return;
 }
 
 static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
 
-    printf("In allocate chunk\n");
+    printf("In allocate chunk--------------------------------------\n");
     t_chunk_header *head = NULL;
 
     if (zone->base_block == NULL) {
-        printf("check first condition\n");
+        printf("Allocating first block of %u zone\n", zone->type);
 
-        head = (t_chunk_header *)zone->base_block;
-        head->size = t;
-        head->is_free = false;
-        head->next = NULL;
-        // t_chunk_header *chunk;
-
-        // chunk->size = t;
-        // chunk->is_free = false;
-        // chunk->next = NULL;
-
-        // zone->base_block = init_chunk_header(t);
-        // zone->base_block = chunk;
+        zone->base_block = (t_chunk_header *)zone + sizeof(t_memory_zone);
+        init_chunk_header(zone->base_block, t);
         return (zone->base_block);
 
     } else {
         head = zone->base_block;
-        while (t > head->size && head->is_free == false) {
+        while (head) {
             
-            if (head->next == NULL) {
-                head->next = init_chunk_header(t);
+            if (t <= head->size && head->is_free) {
+                printf("We return a free one !");
+                return(head);
+            }
+            else if (head->next == NULL) {
+                printf("We find the next one\n");
+                head->next = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
+                init_chunk_header(head->next, t);
                 return (head->next);
             } else {
+                printf("This one not ok, let's check the next one\n");
                 head = head->next;
             }
 
             // implement a way to create a free block right after the selcted one
             // if possible. Otherwise it's splitting
 
-            return(head);
+
         }
     }
+    printf("End of allocate chunk--------------------------------------\n");
     return (NULL);
 }
 
+size_t  get_alloc_type(size_t t) {
 
+    if (t <= SMALL_THRESHOLD) {
+        return (TINY);
+    }
+    // else if ()
+    // return (SMALL);
+    else {
+        return (LARGE);
+    }
+}
 
 EXPORT
 void    *malloc(size_t t) {
+
+    printf("Malloc call--------------------------------------------------------------------\n");
 
     size_t len = align4(t);
     printf("len aligned is %lu\n", len);
@@ -117,8 +154,9 @@ void    *malloc(size_t t) {
     printf("chunk Len = %lu\n", chunk_len);
     printf("HEADER_SIZE is %lu and MEMORY_SIZE_HEADER is %lu\n", HEADER_SIZE, MEMZONE_HEADER);
     t_chunk_header *chunk = NULL;
-    
-    if (t > LARGE_THRESHOLD) {
+    size_t alloc_type = get_alloc_type(t);
+
+    if (alloc_type == LARGE) {
         // check if size + header_size <= page_size else add 1 page_size
         chunk = mmap(NULL, chunk_len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (chunk == MAP_FAILED) {
@@ -130,7 +168,7 @@ void    *malloc(size_t t) {
             chunk->next = NULL;
     }
     else {
-        t_memory_zone *zone = get_zone(t);
+        t_memory_zone *zone = get_zone(alloc_type, t);
         if (zone == NULL) {
             zone = create_zone(t);
             if (zone == NULL) {
@@ -139,6 +177,9 @@ void    *malloc(size_t t) {
             add_zone(zone);
         }
         chunk = allocate_chunk(zone, t);
+        if (chunk == NULL) {
+            printf("Allocation of tiny failed...\n");
+        }
     }
     
     return chunk->data;

@@ -10,6 +10,11 @@
 # define SMALL_ZONE_SIZE 32
 # define align4(x) (((((x)-1)>>2)<<2)+4)
 
+enum zone_type {
+    TINY,
+    SMALL,
+    LARGE
+};
 // Tiny :
 // size = 4*4096 = 16384
 // moins memory_zone header = 16384 -32 = 16352
@@ -21,9 +26,7 @@
 # define SMALL_THRESHOLD (size_t)(getpagesize() / 32) // --> 128bytes
 # define LARGE_THRESHOLD (size_t)getpagesize()//        --> 4096bytes
 
-
 #define EXPORT __attribute__((visibility("default")))
-
 
 typedef struct s_chunk_header {
 
@@ -32,12 +35,13 @@ typedef struct s_chunk_header {
     struct s_chunk_header   *next;
     char                    data[];
 
-} t_chunk_header; // MIGHT NOT USE TYPEDEF HERE
+} t_chunk_header;
 
 typedef struct s_memory_zone {
 
-    char                    *type;
+    enum zone_type          type;
     size_t                  size_total;
+    // must add variable size_left;
     struct s_memory_zone    *next;
     t_chunk_header          *base_block;
 
@@ -47,10 +51,7 @@ typedef struct s_memory_zone {
 # define MEMZONE_HEADER sizeof(t_memory_zone)
 # define PAGE_SIZE (size_t)getpagesize()
 
-
-
 void    *malloc(size_t t);
 void    free(void *ptr);
-// struct t_chunk_header *allocate_chunk(size_t t);
 
 #endif

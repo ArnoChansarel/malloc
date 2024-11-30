@@ -5,9 +5,9 @@ void free(void *ptr) {
 
     t_chunk_header *chunk = (t_chunk_header*)((char*)ptr - HEADER_SIZE);
 
+    printf("In FREE function-------------------------------------------------------------------------\n");
     printf("size : %lu\n", chunk->size);
     printf("Data : %s\n", chunk->data);
-
 
     if (chunk->size >= PAGE_SIZE) {
         if (munmap(chunk, chunk->size + HEADER_SIZE)) {
