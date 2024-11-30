@@ -32,7 +32,7 @@ static t_memory_zone *create_zone(size_t t) {
 
     zone->type = TINY;
     zone->size_total = total_size - sizeof(t_memory_zone);
-    zone->next = NULL;//          SONT MIS A NULL MAIS POUR ALLOCATION DOIT FAIRE zone + sizeof(*next);
+    zone->next = NULL;//          set to NULL but for allocatin must do [zone + sizeof(*next)];
     zone->base_block = NULL;
 
     return (zone);
