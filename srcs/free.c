@@ -16,7 +16,10 @@ void free(void *ptr) {
             printf("Freed !\n");
         }
     } else {
-        printf("Size too small\n");
+        printf("Freeing memory allocatin :\n");
+        bzero(chunk + HEADER_SIZE, chunk->size);
+        chunk->is_free = true;
+        printf("Chunk at address [%p] freed\n", chunk);
     }
 
     // Defragment the false freed memory

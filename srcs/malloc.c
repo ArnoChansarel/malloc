@@ -11,12 +11,12 @@ t_memory_zone *base = NULL;
 // ?/ set protections
 
 
-static t_memory_zone *create_zone(size_t t) {
+static t_memory_zone *create_zone(size_t type) {
 
     t_memory_zone *zone = NULL;
     size_t total_size = 0;
 
-    if (t <= SMALL_THRESHOLD) {
+    if (type == TINY) {
         printf("Creating a tiny memzone\n");
         total_size = PAGE_SIZE * 4; // 3.12 memory page is enough for 100 allocations
     } else {
@@ -30,7 +30,7 @@ static t_memory_zone *create_zone(size_t t) {
         return NULL;
     }
 
-    zone->type = TINY;
+    zone->type = type;
     zone->size_total = total_size - sizeof(t_memory_zone);
     zone->next = NULL;//          set to NULL but for allocatin must do [zone + sizeof(*next)];
     zone->base_block = NULL;
@@ -99,8 +99,11 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
     if (zone->base_block == NULL) {
         printf("Allocating first block of %u zone\n", zone->type);
 
-        zone->base_block = (t_chunk_header *)zone + sizeof(t_memory_zone);
+        zone->base_block = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
         init_chunk_header(zone->base_block, t);
+        printf("returning 1st chunk at address [%p]\n", zone->base_block);
+        printf("Knowing that zone is at address [%p]\n", zone);
+        printf("And size of memory zone is %lu\n", sizeof(t_memory_zone));
         return (zone->base_block);
 
     } else {
@@ -113,8 +116,10 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
             }
             else if (head->next == NULL) {
                 printf("We find the next one\n");
-                head->next = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
+                head->next = (t_chunk_header *)((char *)head + sizeof(t_chunk_header) + head->size);
                 init_chunk_header(head->next, t);
+                printf("returning 2nd chunk at address [%p]\n", head->next);
+                printf("Knowing that head is at address [%p]\n", head);
                 return (head->next);
             } else {
                 printf("This one not ok, let's check the next one\n");
@@ -170,7 +175,7 @@ void    *malloc(size_t t) {
     else {
         t_memory_zone *zone = get_zone(alloc_type, t);
         if (zone == NULL) {
-            zone = create_zone(t);
+            zone = create_zone(alloc_type);
             if (zone == NULL) {
                 return NULL;
             }
