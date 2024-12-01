@@ -51,7 +51,11 @@ typedef struct s_memory_zone {
 # define MEMZONE_HEADER sizeof(t_memory_zone)
 # define PAGE_SIZE (size_t)getpagesize()
 
+extern t_memory_zone *base;
+
 void    *malloc(size_t t);
 void    free(void *ptr);
+
+void    show_alloc_mem();
 
 #endif

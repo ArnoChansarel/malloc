@@ -53,12 +53,9 @@ SRCS = $(addprefix $(SRCPATH)/, malloc.c free.c)
 
 OBJ = $(SRCS:$(SRCPATH)/%.c=$(OBJPATH)/%.o)
 
-
-### RULES ###
-
 ### BUILD ###
 
-all : mk_objdir $(NAME)
+all : mk_objdir $(NAME) tester
 
 
 mk_objdir:
@@ -86,7 +83,7 @@ help:
 		"       minishell:    compile and run test/minishell/./minishell with lib\n"\
 		"-----------------"
 
-tester: all
+tester:
 	gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
 
 ### CLEAN ###

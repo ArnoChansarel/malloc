@@ -10,6 +10,16 @@ t_memory_zone *base = NULL;
 // ?/ Use getrlimit()
 // ?/ set protections
 
+unsigned long long hex_to_decimal(const void *address) {
+
+    char hex_str[20];
+    snprintf(hex_str, sizeof(hex_str), "%p", address);
+
+    unsigned long long result;
+    sscanf(hex_str, "%llx", &result);
+    
+    return result;
+}
 
 static t_memory_zone *create_zone(size_t type) {
 
@@ -36,7 +46,6 @@ static t_memory_zone *create_zone(size_t type) {
     zone->base_block = NULL;
 
     return (zone);
-
 }
 
 static void     add_zone(t_memory_zone *zone) {
@@ -147,6 +156,19 @@ size_t  get_alloc_type(size_t t) {
         return (LARGE);
     }
 }
+
+
+// Must change : the global linked list isn't allocated, just point to 
+//
+//      [chnk | data   ][chnk | data][chnk | data   ][chnk | data     ][chnk | data ][chnk | data       ][chnk | data      ]
+//      |___________________________________________||______________________________||_____________________________________|
+//            zone TINY (pre allocated)                 zone SMALL (pre allocated)        zone LARGE      
+
+// allocate TINY and SMALL when launching
+// create a LARGE zone if needed, and add allocations in it if needed.
+// if a new TINY or SMALL zone must be created, LARGE zone must not grow more. !! Only if last in linkedlist !!
+// defragmenting will work only in each zone.
+
 
 EXPORT
 void    *malloc(size_t t) {
