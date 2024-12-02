@@ -41,6 +41,8 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     if (zone == MAP_FAILED) {
         printf("Create Zone failed\n");
         return NULL;
+    } else {
+        printf("just allocated %lu bytes at adress [%p] !\n", total_size, zone);
     }
 
     zone->type = type;
@@ -80,7 +82,7 @@ static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
 
     t_memory_zone *head = base;
 
-    if (head) {
+    if (head && alloc_type != LARGE) {
         do {
             if ((size_t)head->type == alloc_type) {
                 printf("A zone has been found, ");
@@ -104,10 +106,11 @@ static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
     return NULL;
 }
 
-static void init_chunk_header(t_chunk_header *chunk, size_t t) {
+static void init_chunk_header(t_chunk_header *chunk, size_t t, t_chunk_header *prev) {
 
     chunk->size = t;
     chunk->is_free = false;
+    chunk->prev = prev;
     chunk->next = NULL;
 
     return;
@@ -122,10 +125,11 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
         printf("Allocating first block of %u zone\n", zone->type);
 
         zone->base_block = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
-        init_chunk_header(zone->base_block, t);
+        init_chunk_header(zone->base_block, t, NULL);
         printf("returning 1st chunk at address [%p]\n", zone->base_block);
         printf("Knowing that zone is at address [%p]\n", zone);
         printf("And size of memory zone is %lu\n", sizeof(t_memory_zone));
+        printf("----> adress of chunk is [%p]\n", zone->base_block);
         return (zone->base_block);
 
     } else {
@@ -142,7 +146,7 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
                 size_t chunk_size = sizeof(t_chunk_header) + head->size;
                 head->next = (t_chunk_header *)((char *)head + chunk_size);
                 // check here if space left
-                init_chunk_header(head->next, t);
+                init_chunk_header(head->next, t, head);
                 printf("returning 2nd chunk at address [%p]\n", head->next);
                 printf("Knowing that head is at address [%p]\n", head);
                 return (head->next);
@@ -151,7 +155,7 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
                 head = head->next;
             }
 
-            // implement a way to create a free block right after the selcted one
+            // implement a way to create a free block right after the selcted one and if there's 
             // if possible. Otherwise it's splitting
 
 
@@ -205,10 +209,24 @@ static int init_memory_zone() {
     return (0);
 }
 
+
+struct rlimit get_limit() {
+    struct rlimit old_lim; 
+
+    if( getrlimit(RLIMIT_NOFILE, &old_lim) == 0) 
+        printf("Old limits -> soft limit= %llu \t"
+           " hard limit= %llu \n", old_lim.rlim_cur,  
+                                 old_lim.rlim_max); 
+    return (old_lim);
+}
+
+
 EXPORT
 void    *malloc(size_t t) {
 
     printf("Malloc call--------------------------------------------------------------------\n");
+    get_limit();
+
 
     size_t len = align4(t);
     printf("len aligned is %lu\n", len);
@@ -238,9 +256,9 @@ void    *malloc(size_t t) {
     //         chunk->next = NULL;
     // }
     // else {
-        t_memory_zone *zone = get_zone(alloc_type, t);
+        t_memory_zone *zone = get_zone(alloc_type, len);
         if (zone == NULL || alloc_type == LARGE) {
-            zone = create_zone(LARGE, alloc_type);
+            zone = create_zone(LARGE, len);
             if (zone == NULL) {
                 return NULL;
             }
@@ -253,5 +271,6 @@ void    *malloc(size_t t) {
         }
     // }
     
+    printf("Returning the adress [%p]\n", chunk->data);
     return chunk->data;
 }
