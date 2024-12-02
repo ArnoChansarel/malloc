@@ -32,6 +32,7 @@ typedef struct s_chunk_header {
 
     size_t                  size;
     bool                    is_free;
+    struct s_chunk_header   *prev;
     struct s_chunk_header   *next;
     char                    data[];
 
@@ -40,8 +41,9 @@ typedef struct s_chunk_header {
 typedef struct s_memory_zone {
 
     enum zone_type          type;
-    size_t                  size_total;
-    // must add variable size_left;
+    size_t                  size_total; // both might be [unsigned long long], since
+    size_t                  size_left; // it's bytes we can expect a large amount of it
+    struct s_memory_zone    *prev;
     struct s_memory_zone    *next;
     t_chunk_header          *base_block;
 
@@ -57,5 +59,7 @@ void    *malloc(size_t t);
 void    free(void *ptr);
 
 void    show_alloc_mem();
+
+size_t  get_alloc_type(size_t t);
 
 #endif

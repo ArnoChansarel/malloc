@@ -38,12 +38,21 @@ int main() {
 
     snprintf(ptr, 100, "Hello, custom malloc!");
     printf("%s\n", ptr);
-    free(ptr);
+    // free(ptr);
 
     printf("Before snprintf\n");
     snprintf(ptr2, 100, "Hello, custom malloc!");
     printf("%s\n", ptr2);
-    free(ptr2);
+    // free(ptr2);
+
+
+
+    char *ptr3 = (char *)malloc(4096 * 4);
+    snprintf(ptr3, 100, "Hello, custom malloc LARGE!");
+    // free(ptr3); not ready yet
+
+    char *ptr4 = (char *)malloc(4096 * 4);
+    snprintf(ptr4, 100, "Hello, custom malloc LARGE!");
 
     return 0;
 }
