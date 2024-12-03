@@ -15,16 +15,15 @@ enum zone_type {
     SMALL,
     LARGE
 };
-// Tiny :
-// size = 4*4096 = 16384
-// moins memory_zone header = 16384 -32 = 16352
-// diviser en chunks : 112
-// pour des chunks de 146bytes
-// moins la size du header 146 - 24 = 122bytesmax par alloc. Sinon SMALL
 
 
-# define SMALL_THRESHOLD (size_t)(getpagesize() / 32) // --> 128bytes
-# define LARGE_THRESHOLD (size_t)getpagesize()//        --> 4096bytes
+# define SMALL_THRESHOLD (size_t)(getpagesize() / 12) // --> 308bytes
+# define LARGE_THRESHOLD (size_t)getpagesize() - 1//        --> 4095bytes
+# define TINY_FACTOR 10
+# define SMALL_FACTOR 120
+
+// --> We get 120 allocations for each zones
+
 
 #define EXPORT __attribute__((visibility("default")))
 

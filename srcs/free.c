@@ -8,17 +8,13 @@ void defragment_memory(t_memory_zone *zone) {
 
 EXPORT
 void free(void *ptr) {
-    printf("In FREE function-------------------------------------------------------------------------\n");
-
-    printf("Getting the pointer at address [%p]\n", ptr);
+    // printf("In FREE function-------------------------------------------------------------------------\n");
 
     t_memory_zone *temp_zone = NULL;
     t_chunk_header *chunk = (t_chunk_header *)((char*)ptr - HEADER_SIZE);
-    printf("And its chunk at address [%p]\n", chunk);
 
-
-    printf("size : %lu\n", chunk->size);
-    printf("Data : %s\n", chunk->data);
+    // printf("size : %lu\n", chunk->size);
+    // printf("Data : %s\n", chunk->data);
     size_t alloc_type = get_alloc_type(chunk->size);
 
     if (alloc_type == LARGE) {
@@ -31,7 +27,7 @@ void free(void *ptr) {
 
 
         size_t size_total = chunk->size + HEADER_SIZE + MEMZONE_HEADER;
-        printf("Trying to free %lu bytes at address [%p] ...\n", size_total, temp_zone);
+        // printf("Trying to free %lu bytes at address [%p] ...\n", size_total, temp_zone);
         // if (munmap(chunk, chunk->size + HEADER_SIZE)) {
         if (munmap(temp_zone, size_total)) {
             printf("Free failed\n");
@@ -42,6 +38,7 @@ void free(void *ptr) {
         printf("Freeing memory allocatin :\n");
         bzero(chunk + HEADER_SIZE, chunk->size);
         chunk->is_free = true;
+        chunk->size = 0;
         printf("Chunk at address [%p] freed\n", chunk);
     }
 
