@@ -2,6 +2,18 @@
 #include "../includes/malloc.h"
 #include "libft.h"
 
+
+//
+//      [chnk | data   ][chnk | data][chnk | data   ][chnk | data     ][chnk | data ][chnk | data       ][chnk | data      ]
+//      |___________________________________________||______________________________||_____________________________________|
+//            zone TINY (pre allocated)                 zone SMALL (pre allocated)        zone LARGE      
+
+// allocate TINY and SMALL when launching
+// create a LARGE zone if needed, and add allocations in it if needed.
+// if a new TINY or SMALL zone must be created, LARGE zone must not grow more. !! Only if last in linkedlist !!
+// defragmenting will work only in each zone.
+
+
 t_memory_zone *base = NULL;
 
 unsigned long long hex_to_decimal(const void *address) {
@@ -21,13 +33,10 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     size_t total_size = 0;
 
     if (type == TINY) {
-        // printf("Creating a tiny memzone\n");
         total_size = PAGE_SIZE * TINY_FACTOR;
     } else if (type == SMALL) {
-        // printf("Creating a SMALL memzone\n");
         total_size = PAGE_SIZE * SMALL_FACTOR;
     } else if (type == LARGE) {
-        // printf("Creating a LARGE memzone\n");
         total_size = sizeof(t_memory_zone) + sizeof(t_chunk_header) + large_alloc;
     }
 
@@ -35,9 +44,7 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     if (zone == MAP_FAILED) {
         printf("Create Zone failed\n");
         return NULL;
-    }// else {
-    //     printf("just allocated %lu bytes at adress [%p] !\n", total_size, zone);
-    // }
+    }
 
     zone->type = type;
     zone->size_total = total_size - sizeof(t_memory_zone);
@@ -55,9 +62,7 @@ static void     add_zone(t_memory_zone *zone) {
     int i = 0;
 
     if (base == NULL) {
-        // printf("Memory zone added at linkedlist index [0]\n");
         base = zone;
-        return;
     } 
     else {
         head = base;
@@ -70,7 +75,6 @@ static void     add_zone(t_memory_zone *zone) {
         head->next = zone;
         zone->prev = head;
     }
-    // printf("Memory zone added at linkedlist index [%d]\n", i + 1);
     return;
 }
 
@@ -81,14 +85,14 @@ static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
     if (head && alloc_type != LARGE) {
         do {
             if ((size_t)head->type == alloc_type) {
-                printf("A zone has been found, ");
+                // printf("A zone has been found, ");
                 
                 size_t chunk_size = sizeof(t_chunk_header) + t;
                 if (chunk_size > head->size_left) {
-                    printf("but no space left in memzone. Checking next one.\n");
+                    // printf("but no space left in memzone. Checking next one.\n");
                     head = head->next;
                 } else {
-                    printf("returning.\n");
+                    // printf("returning.\n");
                     return (head);
                 }
             }
@@ -102,13 +106,15 @@ static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
     return NULL;
 }
 
-static void init_chunk_header(t_chunk_header *chunk, size_t t, t_chunk_header *prev) {
+static void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_chunk_header *prev, t_chunk_header *next) {
 
     chunk->size = t;
     chunk->is_free = false;
     chunk->prev = prev;
-    chunk->next = NULL;
+    chunk->next = next;
 
+    if (zone)
+        zone->size_left -= HEADER_SIZE + t;
     return;
 }
 
@@ -118,14 +124,9 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
     t_chunk_header *head = NULL;
 
     if (zone->base_block == NULL) {
-        // printf("Allocating first block of %u zone\n", zone->type);
 
         zone->base_block = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
-        init_chunk_header(zone->base_block, t, NULL);
-        // printf("returning 1st chunk at address [%p]\n", zone->base_block);
-        // printf("Knowing that zone is at address [%p]\n", zone);
-        // printf("And size of memory zone is %lu\n", sizeof(t_memory_zone));
-        // printf("----> adress of chunk is [%p]\n", zone->base_block);
+        init_chunk_header(zone, zone->base_block, t, NULL, NULL);
         return (zone->base_block);
 
     } else {
@@ -133,27 +134,36 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
         while (head) {
             
             if (t <= head->size && head->is_free) {
-                // printf("We return a free one !");
+            // implement a way to create a free block right after the selcted one and if there's
+            // enough bytes to have 1 struct chunk_header set to free + 1byte of free memory. 
+            // Otherwise it's splitting and we loose bytes forever
+                size_t size_left_by_alloc = head->size - t;
+                if (size_left_by_alloc >= HEADER_SIZE + 1) {
+                    t_chunk_header *free_chunk = (t_chunk_header *)((char *)head + (t + HEADER_SIZE));
+                    size_t free_chunk_size = size_left_by_alloc - HEADER_SIZE;
+
+                    free_chunk->size = free_chunk_size;
+                    free_chunk->is_free = true;
+                    free_chunk->prev = head;
+                    free_chunk->next = head->next;
+                    head->next->prev = free_chunk;
+                    head->next = free_chunk;
+                }
+
+                init_chunk_header(zone, head, t, head->prev, head->next);
                 return(head);
             }
             else if (head->next == NULL) {
-                // printf("We find the next one\n");
-
-                size_t chunk_size = sizeof(t_chunk_header) + head->size;
+                size_t chunk_size = HEADER_SIZE + head->size;
                 head->next = (t_chunk_header *)((char *)head + chunk_size);
-                // check here if space left
-                init_chunk_header(head->next, t, head);
-                // printf("returning 2nd chunk at address [%p]\n", head->next);
-                // printf("Knowing that head is at address [%p]\n", head);
+
+                if (chunk_size <= zone->size_left)
+                    init_chunk_header(zone, head->next, t, head, NULL);
                 return (head->next);
             } else {
                 // printf("This one not ok, let's check the next one\n");
                 head = head->next;
             }
-
-            // implement a way to create a free block right after the selcted one and if there's 
-            // if possible. Otherwise it's splitting
-
 
         }
     }
@@ -171,18 +181,6 @@ size_t  get_alloc_type(size_t t) {
         return (LARGE);
     }
 }
-
-
-// Must change : the global linked list isn't allocated, just point to 
-//
-//      [chnk | data   ][chnk | data][chnk | data   ][chnk | data     ][chnk | data ][chnk | data       ][chnk | data      ]
-//      |___________________________________________||______________________________||_____________________________________|
-//            zone TINY (pre allocated)                 zone SMALL (pre allocated)        zone LARGE      
-
-// allocate TINY and SMALL when launching
-// create a LARGE zone if needed, and add allocations in it if needed.
-// if a new TINY or SMALL zone must be created, LARGE zone must not grow more. !! Only if last in linkedlist !!
-// defragmenting will work only in each zone.
 
 
 static int init_memory_zone() {
@@ -223,7 +221,7 @@ static int init_memory_zone() {
 EXPORT
 void    *malloc(size_t t) {
 
-    printf("Malloc call--------------------------------------------------------------------\n");
+    // printf("Malloc call--------------------------------------------------------------------\n");
     // get_limit();
 
 
@@ -231,7 +229,7 @@ void    *malloc(size_t t) {
     // printf("len aligned is %lu\n", len);
     size_t chunk_len = HEADER_SIZE + len;
     // printf("chunk Len = %lu\n", chunk_len);
-    // printf("HEADER_SIZE is %lu and MEMORY_SIZE_HEADER is %lu\n", HEADER_SIZE, MEMZONE_HEADER);
+    // printf("HEADER_SIZE is %lu and MEMORY_SIZE_HEADER is %lu\n", HEADER_SIZE, MEMORY_HEADER_SIZE);
     t_chunk_header *chunk = NULL;
     size_t alloc_type = get_alloc_type(t);
 

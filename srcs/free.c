@@ -1,45 +1,82 @@
 #include "../includes/malloc.h"
 
+void defragment_memory(t_chunk_header *chunk) {
 
+    size_t new_size = 0;
+    bool defragmented = false;
 
-void defragment_memory(t_memory_zone *zone) {
+    if (chunk->prev && chunk->prev->is_free) {
+
+        new_size = chunk->size + HEADER_SIZE;
+        if (chunk->next) {
+            chunk->prev->next = chunk->next;
+            chunk->next->prev = chunk->prev;
+        } else {
+            chunk->prev->next = NULL;
+        }
+        chunk = chunk->prev;
+        new_size += chunk->size;
+
+        chunk->size = new_size;
+        ft_memset(chunk + HEADER_SIZE, 0x55, new_size);
+        defragmented = true;
+    }
+
+    if (chunk->next && chunk->next->is_free) {
+        new_size = chunk->size + chunk->next->size + HEADER_SIZE;
+        if (chunk->next->next) {
+            chunk->next->next->prev = chunk;
+            chunk->next = chunk->next->next;
+        } else {
+            chunk->next = NULL;
+        }
+        chunk->size = new_size;
+        ft_memset(chunk + HEADER_SIZE, 0x55, new_size);
+        defragmented = true;
+    }
+
+    if (defragmented)// recursive is for small free bloc remaining after a realloc.
+        defragment_memory(chunk);
+
     return;
 }
 
 EXPORT
 void free(void *ptr) {
     // printf("In FREE function-------------------------------------------------------------------------\n");
+    if (ptr == NULL)
+        return;
 
     t_memory_zone *temp_zone = NULL;
     t_chunk_header *chunk = (t_chunk_header *)((char*)ptr - HEADER_SIZE);
 
-    // printf("size : %lu\n", chunk->size);
-    // printf("Data : %s\n", chunk->data);
     size_t alloc_type = get_alloc_type(chunk->size);
 
     if (alloc_type == LARGE) {
-
-        temp_zone = (t_memory_zone *)((char *)chunk - MEMZONE_HEADER);
+        temp_zone = (t_memory_zone *)((char *)chunk - MEMORY_HEADER_SIZE);
         if (temp_zone->next) {
             // put zone out of list before freeing it
             temp_zone->prev->next = temp_zone->next;
+            temp_zone->next->prev = temp_zone->prev;
+        } else {
+            temp_zone->prev->next = NULL;
         }
 
-
-        size_t size_total = chunk->size + HEADER_SIZE + MEMZONE_HEADER;
-        // printf("Trying to free %lu bytes at address [%p] ...\n", size_total, temp_zone);
-        // if (munmap(chunk, chunk->size + HEADER_SIZE)) {
+        size_t size_total = chunk->size + HEADER_SIZE + MEMORY_HEADER_SIZE;
         if (munmap(temp_zone, size_total)) {
             printf("Free failed\n");
-        } else {
-            printf("Freed !\n");
         }
     } else {
-        printf("Freeing memory allocatin :\n");
-        bzero(chunk + HEADER_SIZE, chunk->size);
+        ft_memset(chunk + HEADER_SIZE, 0x55, chunk->size);
         chunk->is_free = true;
-        chunk->size = 0;
-        printf("Chunk at address [%p] freed\n", chunk);
+        defragment_memory(chunk);
+
+        t_chunk_header *head = chunk;
+        while(head->prev){
+            head = head->prev;
+        }
+        temp_zone = (t_memory_zone *)((char *)head - MEMORY_HEADER_SIZE);
+        temp_zone->size_left += HEADER_SIZE + chunk->size;
     }
 
     // Defragment the false freed memory :
