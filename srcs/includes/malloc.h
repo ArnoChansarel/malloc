@@ -17,15 +17,13 @@ enum zone_type {
     LARGE
 };
 
-
-# define SMALL_THRESHOLD (size_t)(getpagesize() / 12) //    --> 308bytes
-# define LARGE_THRESHOLD (size_t)getpagesize() - 1//        --> 4095bytes
+# define PAGE_SIZE (size_t)getpagesize()
+# define SMALL_THRESHOLD PAGE_SIZE / 12 //    --> 308bytes
+# define LARGE_THRESHOLD PAGE_SIZE - 1//        --> 4095bytes
 # define TINY_FACTOR 10
 # define SMALL_FACTOR 120
 
-// --> We get 120 allocations for each zones
-
-#define EXPORT __attribute__((visibility("default")))
+// --> We get 120max allocations for each zones
 
 typedef struct s_chunk_header {
 
@@ -50,15 +48,22 @@ typedef struct s_memory_zone {
 
 # define HEADER_SIZE sizeof(t_chunk_header)
 # define MEMORY_HEADER_SIZE sizeof(t_memory_zone)
-# define PAGE_SIZE (size_t)getpagesize()
+# define EXPORT __attribute__((visibility("default")))
+
 
 extern t_memory_zone *base;
 
+// FUNCTIONS
 void    *malloc(size_t t);
 void    free(void *ptr);
 void    *realloc(void *ptr, size_t size);
 void    show_alloc_mem();
 
+// SHARED FUNCTIONS
 size_t  get_alloc_type(size_t t);
+t_memory_zone *get_zone(t_chunk_header *chunk);
+t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t);
+void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_chunk_header *prev, t_chunk_header *next);
 
 #endif
+

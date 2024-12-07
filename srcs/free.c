@@ -1,11 +1,11 @@
 #include "../includes/malloc.h"
 
-void defragment_memory(t_chunk_header *chunk) {
+static void defragment_memory(t_chunk_header *chunk) {
 
     size_t new_size = 0;
     bool defragmented = false;
 
-    if (chunk->prev && chunk->prev->is_free) {
+    if (chunk->prev && chunk->prev->is_free) {// CHECK PREV FREE CHUNK
 
         new_size = chunk->size + HEADER_SIZE;
         if (chunk->next) {
@@ -22,8 +22,9 @@ void defragment_memory(t_chunk_header *chunk) {
         defragmented = true;
     }
 
-    if (chunk->next && chunk->next->is_free) {
-        new_size = chunk->size + chunk->next->size + HEADER_SIZE;
+    if (chunk->next && chunk->next->is_free) {// CHECK NEXT FREE CHUNK
+        size_t next_chunk_size = HEADER_SIZE + chunk->next->size;
+        new_size = chunk->size + next_chunk_size;
         if (chunk->next->next) {
             chunk->next->next->prev = chunk;
             chunk->next = chunk->next->next;
@@ -37,13 +38,12 @@ void defragment_memory(t_chunk_header *chunk) {
 
     if (defragmented)// recursive is for small free bloc remaining after a realloc.
         defragment_memory(chunk);
-
     return;
 }
 
 EXPORT
 void free(void *ptr) {
-    // printf("In FREE function-------------------------------------------------------------------------\n");
+
     if (ptr == NULL)
         return;
 
@@ -69,14 +69,11 @@ void free(void *ptr) {
     } else {
         ft_memset(chunk + HEADER_SIZE, 0x55, chunk->size);
         chunk->is_free = true;
-        defragment_memory(chunk);
+        t_chunk_header *temp_chunk = chunk;
 
-        t_chunk_header *head = chunk;
-        while(head->prev){
-            head = head->prev;
-        }
-        temp_zone = (t_memory_zone *)((char *)head - MEMORY_HEADER_SIZE);
-        temp_zone->size_left += HEADER_SIZE + chunk->size;
+        temp_zone = get_zone(chunk);
+        temp_zone->size_left += chunk->size + HEADER_SIZE;
+        defragment_memory(temp_chunk);
     }
 
     // Defragment the false freed memory :

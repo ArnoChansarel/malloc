@@ -16,17 +16,6 @@
 
 t_memory_zone *base = NULL;
 
-unsigned long long hex_to_decimal(const void *address) {
-
-    char hex_str[20];
-    snprintf(hex_str, sizeof(hex_str), "%p", address);
-
-    unsigned long long result;
-    sscanf(hex_str, "%llx", &result);
-    
-    return result;
-}
-
 static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
 
     t_memory_zone *zone = NULL;
@@ -63,9 +52,9 @@ static void     add_zone(t_memory_zone *zone) {
 
     if (base == NULL) {
         base = zone;
-    } 
+    }   
     else {
-        head = base;
+        head = base;//            Here, make a pointer diff to place LARGE at right place
         while (head->next) {
             i++;
             if (!head->next)
@@ -78,7 +67,7 @@ static void     add_zone(t_memory_zone *zone) {
     return;
 }
 
-static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
+static t_memory_zone *select_zone(size_t alloc_type, size_t t) {
 
     t_memory_zone *head = base;
 
@@ -106,21 +95,8 @@ static t_memory_zone *get_zone(size_t alloc_type, size_t t) {
     return NULL;
 }
 
-static void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_chunk_header *prev, t_chunk_header *next) {
-
-    chunk->size = t;
-    chunk->is_free = false;
-    chunk->prev = prev;
-    chunk->next = next;
-
-    if (zone)
-        zone->size_left -= HEADER_SIZE + t;
-    return;
-}
-
 static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
 
-    // printf("In allocate chunk--------------------------------------\n");
     t_chunk_header *head = NULL;
 
     if (zone->base_block == NULL) {
@@ -137,21 +113,7 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
             // implement a way to create a free block right after the selcted one and if there's
             // enough bytes to have 1 struct chunk_header set to free + 1byte of free memory. 
             // Otherwise it's splitting and we loose bytes forever
-                size_t size_left_by_alloc = head->size - t;
-                if (size_left_by_alloc >= HEADER_SIZE + 1) {
-                    t_chunk_header *free_chunk = (t_chunk_header *)((char *)head + (t + HEADER_SIZE));
-                    size_t free_chunk_size = size_left_by_alloc - HEADER_SIZE;
-
-                    free_chunk->size = free_chunk_size;
-                    free_chunk->is_free = true;
-                    free_chunk->prev = head;
-                    free_chunk->next = head->next;
-                    head->next->prev = free_chunk;
-                    head->next = free_chunk;
-                }
-
-                init_chunk_header(zone, head, t, head->prev, head->next);
-                return(head);
+                return reduce_chunk(zone, head, t);
             }
             else if (head->next == NULL) {
                 size_t chunk_size = HEADER_SIZE + head->size;
@@ -161,27 +123,12 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
                     init_chunk_header(zone, head->next, t, head, NULL);
                 return (head->next);
             } else {
-                // printf("This one not ok, let's check the next one\n");
                 head = head->next;
             }
-
         }
     }
-    // printf("End of allocate chunk--------------------------------------\n");
     return (NULL);
 }
-
-size_t  get_alloc_type(size_t t) {
-
-    if (t <= SMALL_THRESHOLD)
-        return (TINY);
-    else if (t <= LARGE_THRESHOLD)
-        return (SMALL);
-    else {
-        return (LARGE);
-    }
-}
-
 
 static int init_memory_zone() {
 
@@ -191,7 +138,6 @@ static int init_memory_zone() {
     if (zone == NULL) {
         return (1);
     }
-    // base = zone;
     add_zone(zone);
     zone = (t_memory_zone *)((char *)zone->size_total + sizeof(t_memory_zone));
     zone = create_zone(SMALL, 0);
@@ -216,20 +162,25 @@ static int init_memory_zone() {
 
 
 
+// 1 terminer realloc
+// 2 build comparatif addresse dans add_zone
+// 3 set limit with get_limit()
+// 4 check user input and protections
+// 5 check les return NULL en cascade
+// 6 !!!!!!!!!! COMPILER AVEC LES FLAGS !!!!!!!!!!!!
 
-//!!!!!!!!!! COMPILER AVEC LES FLAGS !!!!!!!!!!!!
+
 EXPORT
 void    *malloc(size_t t) {
 
     // printf("Malloc call--------------------------------------------------------------------\n");
     // get_limit();
 
+    if (t <= 0)
+        return NULL;
 
     size_t len = align4(t);
-    // printf("len aligned is %lu\n", len);
     size_t chunk_len = HEADER_SIZE + len;
-    // printf("chunk Len = %lu\n", chunk_len);
-    // printf("HEADER_SIZE is %lu and MEMORY_SIZE_HEADER is %lu\n", HEADER_SIZE, MEMORY_HEADER_SIZE);
     t_chunk_header *chunk = NULL;
     size_t alloc_type = get_alloc_type(t);
 
@@ -240,7 +191,7 @@ void    *malloc(size_t t) {
         }
     }
 
-    t_memory_zone *zone = get_zone(alloc_type, len);
+    t_memory_zone *zone = select_zone(alloc_type, len);
     if (zone == NULL || alloc_type == LARGE) {
         zone = create_zone(LARGE, len);
         if (zone == NULL) {
@@ -253,7 +204,6 @@ void    *malloc(size_t t) {
         printf("Allocation failed...\n");
         return NULL;
     }
-    
-    // printf("Returning the adress [%p]\n", chunk->data);
+
     return chunk->data;
 }

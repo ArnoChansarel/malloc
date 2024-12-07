@@ -48,7 +48,7 @@ else
 endif
 
 ##### SRCS #####
-SRCS = $(addprefix $(SRCPATH)/, malloc.c free.c show_alloc_mem.c)
+SRCS = $(addprefix $(SRCPATH)/, malloc.c free.c realloc.c shared.c show_alloc_mem.c)
 
 OBJ = $(SRCS:$(SRCPATH)/%.c=$(OBJPATH)/%.o)
 

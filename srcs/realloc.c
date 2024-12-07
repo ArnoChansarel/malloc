@@ -1,4 +1,4 @@
-
+#include "../includes/malloc.h"
 
 // The realloc() function tries  to change the size of the allocation pointed to by ptr to size, and returns ptr.
 // If there is not enough room to enlarge the memory allocation pointed to by ptr, realloc() creates a new allocation,
@@ -9,16 +9,62 @@
 // When extending a region allocated with calloc(3), realloc(3) does not guarantee that the additional memory is
 // also zero-filled.
 
+static t_chunk_header *find_alloc(void *ptr) {
 
+    t_memory_zone *head_zone;
+    t_chunk_header *head_chunk;
+
+    head_zone = base;
+    while (head_zone) {
+        
+        head_chunk = head_zone->base_block;
+        while (head_chunk) {
+            
+            // printf("Comparing [%p] and [%p]\n", ptr, head_chunk->data);
+            if (ptr == head_chunk->data)
+                return head_chunk;
+            head_chunk = head_chunk->next;
+        }
+        head_zone = head_zone->next;
+    }
+    return NULL;
+}
+
+EXPORT
 void *realloc(void *ptr, size_t size) {
     
     void *rtr;
 
     if (ptr == NULL) {
-        rtr = malloc(size);
-        return rtr;
+        return malloc(size);
+    } else if (size == 0) {
+        free(ptr);
+        return malloc(1);
+    } else if (size == -1) {
+        return NULL;
+    }
+
+    t_chunk_header *chunk = find_alloc(ptr);
+    if (chunk == NULL) {
+        printf("Error : Pointer hasn't been allocated by Malloc\n");
+        return NULL;
     }
     
-    
+    size_t alloc_type = get_alloc_type(chunk->size);
+    if ( size == chunk->size ) {
+        // Same length, retruning same ptr
+        return ptr;
+    }
+    else if ( size > chunk->size ) {
+        // if keep same chunk but decreased
+        t_memory_zone *zone = get_zone(chunk);// cause segfault here
+        reduce_chunk(zone, chunk, size);
+    }
+    else if ( size < chunk->size) {
+        // if must allocate a bigger one somewhere else
+        rtr = malloc(size);
+        ft_memmove(rtr, chunk->data, chunk->size);
+        free(chunk->data);
+    } 
     return NULL;
 }
