@@ -1,5 +1,7 @@
 #include "../includes/malloc.h"
 
+// The free() function deallocates the memory allocation pointed to by ptr. If ptr is a NULL pointer, no operation is performed.
+
 static void defragment_memory(t_chunk_header *chunk) {
 
     size_t new_size = 0;

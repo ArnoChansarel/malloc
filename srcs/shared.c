@@ -31,9 +31,25 @@ void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_c
     return;
 }
 
+
 t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t) {
 
     size_t size_left_by_alloc = head->size - t;
+
+    if (zone->type == LARGE) {
+
+        size_t new_size = ((t + MEMORY_HEADER_SIZE + HEADER_SIZE + 4095) / 4096) * 4096;
+        size_left_by_alloc = zone->size_total - HEADER_SIZE - new_size;
+
+        if (munmap(zone + size_left_by_alloc, size_left_by_alloc)) {
+            printf("Free failed\n");
+        }
+        zone->size_total -= size_left_by_alloc;
+        head->size -= size_left_by_alloc;
+        show_alloc_mem();
+        return head;
+    }
+
     if (size_left_by_alloc >= HEADER_SIZE + 1) {
         t_chunk_header *free_chunk = (t_chunk_header *)((char *)head + (t + HEADER_SIZE));
         size_t free_chunk_size = size_left_by_alloc - HEADER_SIZE;
@@ -43,10 +59,11 @@ t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t
         free_chunk->is_free = true;
         free_chunk->prev = head;
         free_chunk->next = head->next;
-        head->next->prev = free_chunk;
+        if (head->next)
+            head->next->prev = free_chunk;
         head->next = free_chunk;
     }
 
     init_chunk_header(zone, head, t, head->prev, head->next);
-    return(head);
+    return (head);
 }

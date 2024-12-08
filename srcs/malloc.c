@@ -162,11 +162,11 @@ static int init_memory_zone() {
 
 
 
-// 1 terminer realloc
-// 2 build comparatif addresse dans add_zone
-// 3 set limit with get_limit()
-// 4 check user input and protections
-// 5 check les return NULL en cascade
+// 1 terminer realloc                           --> good
+// 2 build comparatif addresse dans add_zone    --> 
+// 3 set limit with get_limit()                 -->
+// 4 check user input and protections           --> 
+// 5 check les return NULL en cascade           --> 
 // 6 !!!!!!!!!! COMPILER AVEC LES FLAGS !!!!!!!!!!!!
 
 

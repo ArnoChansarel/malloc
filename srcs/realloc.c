@@ -19,8 +19,6 @@ static t_chunk_header *find_alloc(void *ptr) {
         
         head_chunk = head_zone->base_block;
         while (head_chunk) {
-            
-            // printf("Comparing [%p] and [%p]\n", ptr, head_chunk->data);
             if (ptr == head_chunk->data)
                 return head_chunk;
             head_chunk = head_chunk->next;
@@ -40,8 +38,6 @@ void *realloc(void *ptr, size_t size) {
     } else if (size == 0) {
         free(ptr);
         return malloc(1);
-    } else if (size == -1) {
-        return NULL;
     }
 
     t_chunk_header *chunk = find_alloc(ptr);
@@ -55,16 +51,18 @@ void *realloc(void *ptr, size_t size) {
         // Same length, retruning same ptr
         return ptr;
     }
-    else if ( size > chunk->size ) {
+    else if ( size < chunk->size ) {
         // if keep same chunk but decreased
-        t_memory_zone *zone = get_zone(chunk);// cause segfault here
+        t_memory_zone *zone = get_zone(chunk);
         reduce_chunk(zone, chunk, size);
+        return chunk->data;
     }
-    else if ( size < chunk->size) {
+    else if ( size > chunk->size) {
         // if must allocate a bigger one somewhere else
         rtr = malloc(size);
         ft_memmove(rtr, chunk->data, chunk->size);
         free(chunk->data);
+        return rtr;
     } 
     return NULL;
 }
