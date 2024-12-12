@@ -1,16 +1,16 @@
 #include "../includes/malloc.h"
 #include "libft.h"
 
-static unsigned long long hex_to_decimal(const void *address) {
+// static size_t hex_to_decimal(const void *address) {
 
-    char hex_str[20];
-    snprintf(hex_str, sizeof(hex_str), "%p", address);
+//     char hex_str[20];
+//     snprintf(hex_str, sizeof(hex_str), "%p", address);
 
-    unsigned long long result;
-    sscanf(hex_str, "%llx", &result);
+//     size_t result;
+//     sscanf(hex_str, "%llx", &result);
     
-    return result;
-}
+//     return result;
+// }
 
 static void print_header(t_memory_zone *head) {
 

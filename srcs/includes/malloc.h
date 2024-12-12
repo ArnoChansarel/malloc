@@ -60,10 +60,12 @@ void    *realloc(void *ptr, size_t size);
 void    show_alloc_mem();
 
 // SHARED FUNCTIONS
-size_t  get_alloc_type(size_t t);
-t_memory_zone *get_zone(t_chunk_header *chunk);
-t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t);
-void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_chunk_header *prev, t_chunk_header *next);
+unsigned long long  hex_to_decimal(const void *address);
+size_t              get_alloc_type(size_t t);
+t_memory_zone       *get_zone(t_chunk_header *chunk);
+t_chunk_header      *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t);
+void                init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t,\
+                t_chunk_header *prev, t_chunk_header *next);
 
 #endif
 

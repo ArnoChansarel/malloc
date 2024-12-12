@@ -45,10 +45,29 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     return (zone);
 }
 
+static int check_large_chunk_place(t_memory_zone *zone, t_memory_zone *head) {
+
+    unsigned long long zone_addr = hex_to_decimal(zone);
+    unsigned long long head_addr = hex_to_decimal(head);
+    unsigned long long head_next_addr = hex_to_decimal(head->next);
+    
+    if (zone_addr > head_addr && zone_addr < head_next_addr) {
+        // printf("Yes, address [%p] after address [%p] and before address [%p]\n", zone, head, head->next);
+
+        zone->next = head->next;
+        zone->prev = head;
+        head->next->prev = zone;
+        head->next = zone;
+
+        return 1;
+    }
+    return 0;
+}
+
 static void     add_zone(t_memory_zone *zone) {
     
     t_memory_zone *head = NULL;
-    int i = 0;
+    // int i = 0;
 
     if (base == NULL) {
         base = zone;
@@ -56,7 +75,10 @@ static void     add_zone(t_memory_zone *zone) {
     else {
         head = base;//            Here, make a pointer diff to place LARGE at right place
         while (head->next) {
-            i++;
+            // i++;
+            if (zone->type == LARGE && head->next && head->next->type == LARGE && check_large_chunk_place(zone, head)) {
+                return;
+            }
             if (!head->next)
                 break;
             head = head->next;
@@ -91,7 +113,7 @@ static t_memory_zone *select_zone(size_t alloc_type, size_t t) {
         }  while (head);
     }
 
-    printf("No zone found\n");
+    // printf("No zone found\n");
     return NULL;
 }
 

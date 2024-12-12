@@ -11,6 +11,17 @@ size_t  get_alloc_type(size_t t) {
     }
 }
 
+unsigned long long hex_to_decimal(const void *address) {
+
+    char hex_str[20];
+    snprintf(hex_str, sizeof(hex_str), "%p", address);
+
+    unsigned long long result;
+    sscanf(hex_str, "%llx", &result);
+    
+    return result;
+}
+
 t_memory_zone *get_zone(t_chunk_header *chunk) {
         
     t_chunk_header *head = chunk;
