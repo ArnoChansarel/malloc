@@ -46,6 +46,10 @@ void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_c
 
 t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t) {
 
+    // Is a way to create a free block right after the selcted one and if there's
+    // enough bytes to have 1 struct chunk_header set to free + at least 1byte of free memory. 
+    // Otherwise it's splitting and we loose bytes forever
+
     size_t size_left_by_alloc = head->size - t;
 
     if (zone->type == LARGE) {

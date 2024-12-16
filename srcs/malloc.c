@@ -55,8 +55,7 @@ static int check_large_chunk_place(t_memory_zone *zone, t_memory_zone *head) {
     unsigned long long head_next_addr = hex_to_decimal(head->next);
     
     if (zone_addr > head_addr && zone_addr < head_next_addr) {
-        // printf("Yes, address [%p] after address [%p] and before address [%p]\n", zone, head, head->next);
-
+        
         zone->next = head->next;
         zone->prev = head;
         head->next->prev = zone;
@@ -70,15 +69,13 @@ static int check_large_chunk_place(t_memory_zone *zone, t_memory_zone *head) {
 static void     add_zone(t_memory_zone *zone) {
     
     t_memory_zone *head = NULL;
-    // int i = 0;
 
     if (base == NULL) {
         base = zone;
     }   
     else {
-        head = base;//            Here, make a pointer diff to place LARGE at right place
+        head = base;
         while (head->next) {
-            // i++;
             if (zone->type == LARGE && head->next && head->next->type == LARGE && check_large_chunk_place(zone, head)) {
                 return;
             }
@@ -115,8 +112,6 @@ static t_memory_zone *select_zone(size_t alloc_type, size_t t) {
             }
         }  while (head);
     }
-
-    // printf("No zone found\n");
     return NULL;
 }
 
@@ -135,15 +130,9 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
         while (head) {
             
             if (t <= head->size && head->is_free) {
-            // implement a way to create a free block right after the selcted one and if there's
-            // enough bytes to have 1 struct chunk_header set to free + 1byte of free memory. 
-            // Otherwise it's splitting and we loose bytes forever
                 return reduce_chunk(zone, head, t);
             }
             else if (head->next == NULL) {
-                // reduce chunk will seprate chunk in 2
-                // one stays the same, but size reduced
-                // other is init : size is 
                 size_t chunk_size = HEADER_SIZE + head->size;
                 head->next = (t_chunk_header *)((char *)head + chunk_size);
 
@@ -177,23 +166,8 @@ static int init_memory_zone() {
     return (0);
 }
 
-
-
-
-
-
-// 1 terminer realloc                           --> good
-// 2 build comparatif addresse dans add_zone    --> good
-// 3 set limit with get_limit()                 --> good
-// 4 check user input and protections           --> 
-// 5 check les return NULL en cascade           --> 
-// 6 !!!!!!!!!! COMPILER AVEC LES FLAGS !!!!!!!!!!!!
-
-
 EXPORT
 void    *malloc(size_t t) {
-
-    // printf("Malloc call--------------------------------------------------------------------\n");
 
     if (t <= 0)
         return NULL;
