@@ -9,16 +9,14 @@ ifeq ($(HOSTTYPE),)
 HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
 
-##### NAMES #####
+##### TARGETS #####
 NAME = libft_malloc_$(HOSTTYPE).so
 L_NAME = libft_malloc.so
-D_NAME = test.out
 
 ##### PATH #####
 SRCPATH = ./srcs
 OBJPATH = $(SRCPATH)/obj
 LIBFTPATH = ./libft
-TESTPATH = ./test
 
 ##### LIBS #####
 LIBFT = $(LIBFTPATH)/libft.a
@@ -34,7 +32,6 @@ INC = $(addprefix -I , $(PATH_INCLUDE) $(PATH_INCLUDE2))
 
 ##### COMPILER #####
 CC = clang
-##### COMPILATION FLAG #####
 CCFLAGS = -Wall -Werror -Wextra -fPIC -fvisibility=hidden -fsanitize=address -g
 
 ##### OSTYPE #####
@@ -49,12 +46,11 @@ endif
 
 ##### SRCS #####
 SRCS = $(addprefix $(SRCPATH)/, malloc.c free.c realloc.c shared.c show_alloc_mem.c)
-
 OBJ = $(SRCS:$(SRCPATH)/%.c=$(OBJPATH)/%.o)
 
 ### BUILD ###
 
-all : mk_objdir $(NAME) tester
+all : mk_objdir $(NAME)
 
 
 mk_objdir:
@@ -73,33 +69,20 @@ $(LIBFT):
 $(OBJPATH)/%.o : $(SRCPATH)/%.c $(HEADERS)
 	$(CC) $(CCFLAGS) $(INC) -c $< -o $@
 
-### TESTS ###
-
-help:
-	@echo "----- RULES: -----\n\n"\
-		"      home_tests:    run my_tests.sh in test/\n"\
-		"   regular_tests:    run correction.sh in test/correction/\n"\
-		"       minishell:    compile and run test/minishell/./minishell with lib\n"\
-		"-----------------"
-
-tester:
-	gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
-
 ### CLEAN ###
-.PHONY : sanitize tester clean fclean re
 
 clean :
 	@echo "$(END)$(RED)# removing $(NAME) objects #$(END)$(GREY)"
 	@rm -rf $(OBJ)
 	@make clean -C $(LIBFTPATH)
-	@rm malloc_tester
 
 fclean : clean
 	@echo "$(END)$(RED)\n# removing $(NAME) #$(END)$(GREY)"
 	@rm -f $(NAME)
 	@rm -f $(L_NAME)
-	@rm -f $(TESTPATH)/$(D_NAME)
 	@make fclean -C $(LIBFTPATH)
 
 re : fclean
 	@$(MAKE)
+
+.PHONY : clean fclean re

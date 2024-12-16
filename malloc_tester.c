@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "srcs/includes/malloc.h"
 
+// gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
 
 int main() {
 
