@@ -35,7 +35,7 @@ INC = $(addprefix -I , $(PATH_INCLUDE) $(PATH_INCLUDE2))
 ##### COMPILER #####
 CC = clang
 ##### COMPILATION FLAG #####
-CCFLAGS =  -fPIC -fvisibility=hidden -fsanitize=address -g
+CCFLAGS = -Wall -Werror -Wextra -fPIC -fvisibility=hidden -fsanitize=address -g
 
 ##### OSTYPE #####
 UNAME := $(shell uname)

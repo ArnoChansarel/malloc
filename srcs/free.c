@@ -4,10 +4,11 @@
 
 static void defragment_memory(t_chunk_header *chunk) {
 
+
     size_t new_size = 0;
     bool defragmented = false;
 
-    if (chunk->prev && chunk->prev->is_free) {// CHECK PREV FREE CHUNK
+    if (chunk->prev && chunk->prev->is_free) {
 
         new_size = chunk->size + HEADER_SIZE;
         if (chunk->next) {
@@ -20,11 +21,11 @@ static void defragment_memory(t_chunk_header *chunk) {
         new_size += chunk->size;
 
         chunk->size = new_size;
-        ft_memset(chunk + HEADER_SIZE, 0x55, new_size);
+        ft_memset((t_chunk_header *)((char *)chunk + HEADER_SIZE), 0x55, new_size);
         defragmented = true;
     }
 
-    if (chunk->next && chunk->next->is_free) {// CHECK NEXT FREE CHUNK
+    if (chunk->next && chunk->next->is_free) {
         size_t next_chunk_size = HEADER_SIZE + chunk->next->size;
         new_size = chunk->size + next_chunk_size;
         if (chunk->next->next) {
@@ -34,7 +35,7 @@ static void defragment_memory(t_chunk_header *chunk) {
             chunk->next = NULL;
         }
         chunk->size = new_size;
-        ft_memset(chunk + HEADER_SIZE, 0x55, new_size);
+        ft_memset((t_chunk_header *)((char *)chunk + HEADER_SIZE), 0x55, new_size);
         defragmented = true;
     }
 
@@ -69,7 +70,7 @@ void free(void *ptr) {
             printf("Free failed\n");
         }
     } else {
-        ft_memset(chunk + HEADER_SIZE, 0x55, chunk->size);
+        ft_memset((t_chunk_header *)((char *)chunk + HEADER_SIZE), 0x55, chunk->size);
         chunk->is_free = true;
         t_chunk_header *temp_chunk = chunk;
 

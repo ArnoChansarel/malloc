@@ -45,8 +45,7 @@ void *realloc(void *ptr, size_t size) {
         printf("Error : Pointer hasn't been allocated by Malloc\n");
         return NULL;
     }
-    
-    size_t alloc_type = get_alloc_type(chunk->size);
+
     if ( size == chunk->size ) {
         // Same length, retruning same ptr
         return ptr;
@@ -54,6 +53,7 @@ void *realloc(void *ptr, size_t size) {
     else if ( size < chunk->size ) {
         // if keep same chunk but decreased
         t_memory_zone *zone = get_zone(chunk);
+        zone->size_left += HEADER_SIZE + chunk->size;
         reduce_chunk(zone, chunk, size);
         return chunk->data;
     }

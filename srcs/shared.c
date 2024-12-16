@@ -38,7 +38,8 @@ void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_c
     chunk->prev = prev;
     chunk->next = next;
 
-    zone->size_left -= HEADER_SIZE + t;
+    if (zone)
+        zone->size_left -= HEADER_SIZE + t;
     return;
 }
 
@@ -54,6 +55,7 @@ t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t
 
         if (munmap(zone + size_left_by_alloc, size_left_by_alloc)) {
             printf("Free failed\n");
+            return NULL;
         }
         zone->size_total -= size_left_by_alloc;
         head->size -= size_left_by_alloc;
@@ -77,4 +79,32 @@ t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t
 
     init_chunk_header(zone, head, t, head->prev, head->next);
     return (head);
+}
+
+int check_memory_left(size_t new_size) {
+
+    t_memory_zone       *head_mem = NULL;
+    struct rlimit       limit;
+    unsigned long long  real_alloc = 0;
+
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+        printf("Error getting memory limit.\n");
+        return 1;
+    }
+
+    if (base) {
+        head_mem = base;
+        while (head_mem) {
+            real_alloc += MEMORY_HEADER_SIZE + head_mem->size_total;
+            head_mem = head_mem->next;
+        }
+    }
+
+    // printf("Memory used : %llu/%llu  | Trying to add a total of %lu\n", real_alloc, limit.rlim_max, new_size);
+
+    if (real_alloc + new_size > limit.rlim_max) {
+        printf("Memory limit reached.\n");
+        return 1;
+    }
+    return 0;
 }

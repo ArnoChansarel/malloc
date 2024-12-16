@@ -66,6 +66,7 @@ t_memory_zone       *get_zone(t_chunk_header *chunk);
 t_chunk_header      *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t);
 void                init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t,\
                 t_chunk_header *prev, t_chunk_header *next);
+int                 check_memory_left(size_t new_size);
 
 #endif
 

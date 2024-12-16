@@ -5,12 +5,11 @@
 
 //
 //      [chnk | data   ][chnk | data][chnk | data   ][chnk | data     ][chnk | data ][chnk | data       ][chnk | data      ]
-//      |___________________________________________||______________________________||_____________________________________|
-//            zone TINY (pre allocated)                 zone SMALL (pre allocated)        zone LARGE      
+//      |___________________________________________||______________________________||__________________||_________________|
+//            zone TINY (pre allocated)                 zone SMALL (pre allocated)        zone LARGE            zone LARGE
 
 // allocate TINY and SMALL when launching
 // create a LARGE zone if needed, and add allocations in it if needed.
-// if a new TINY or SMALL zone must be created, LARGE zone must not grow more. !! Only if last in linkedlist !!
 // defragmenting will work only in each zone.
 
 
@@ -26,7 +25,11 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     } else if (type == SMALL) {
         total_size = PAGE_SIZE * SMALL_FACTOR;
     } else if (type == LARGE) {
-        total_size = sizeof(t_memory_zone) + sizeof(t_chunk_header) + large_alloc;
+        total_size = MEMORY_HEADER_SIZE + HEADER_SIZE + large_alloc;
+    }
+
+    if (check_memory_left(total_size)) {
+        return NULL;
     }
 
     zone = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -36,7 +39,7 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
     }
 
     zone->type = type;
-    zone->size_total = total_size - sizeof(t_memory_zone);
+    zone->size_total = total_size - MEMORY_HEADER_SIZE;
     zone-> size_left = zone->size_total;
     zone->prev = NULL;
     zone->next = NULL;
@@ -98,7 +101,7 @@ static t_memory_zone *select_zone(size_t alloc_type, size_t t) {
             if ((size_t)head->type == alloc_type) {
                 // printf("A zone has been found, ");
                 
-                size_t chunk_size = sizeof(t_chunk_header) + t;
+                size_t chunk_size = HEADER_SIZE + t;
                 if (chunk_size > head->size_left) {
                     // printf("but no space left in memzone. Checking next one.\n");
                     head = head->next;
@@ -123,7 +126,7 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
 
     if (zone->base_block == NULL) {
 
-        zone->base_block = (t_chunk_header *)((char *)zone + sizeof(t_memory_zone));
+        zone->base_block = (t_chunk_header *)((char *)zone + MEMORY_HEADER_SIZE);
         init_chunk_header(zone, zone->base_block, t, NULL, NULL);
         return (zone->base_block);
 
@@ -138,6 +141,9 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
                 return reduce_chunk(zone, head, t);
             }
             else if (head->next == NULL) {
+                // reduce chunk will seprate chunk in 2
+                // one stays the same, but size reduced
+                // other is init : size is 
                 size_t chunk_size = HEADER_SIZE + head->size;
                 head->next = (t_chunk_header *)((char *)head + chunk_size);
 
@@ -161,7 +167,7 @@ static int init_memory_zone() {
         return (1);
     }
     add_zone(zone);
-    zone = (t_memory_zone *)((char *)zone->size_total + sizeof(t_memory_zone));
+    zone = (t_memory_zone *)((char *)zone->size_total + MEMORY_HEADER_SIZE);
     zone = create_zone(SMALL, 0);
     if (zone == NULL) {
         free(base);
@@ -172,21 +178,13 @@ static int init_memory_zone() {
 }
 
 
-// struct rlimit get_limit() {
-//     struct rlimit old_lim; 
 
-//     if( getrlimit(RLIMIT_NOFILE, &old_lim) == 0) 
-//         printf("Old limits -> soft limit= %llu \t"
-//            " hard limit= %llu \n", old_lim.rlim_cur,  
-//                                  old_lim.rlim_max); 
-//     return (old_lim);
-// }
 
 
 
 // 1 terminer realloc                           --> good
-// 2 build comparatif addresse dans add_zone    --> 
-// 3 set limit with get_limit()                 -->
+// 2 build comparatif addresse dans add_zone    --> good
+// 3 set limit with get_limit()                 --> good
 // 4 check user input and protections           --> 
 // 5 check les return NULL en cascade           --> 
 // 6 !!!!!!!!!! COMPILER AVEC LES FLAGS !!!!!!!!!!!!
@@ -196,19 +194,17 @@ EXPORT
 void    *malloc(size_t t) {
 
     // printf("Malloc call--------------------------------------------------------------------\n");
-    // get_limit();
 
     if (t <= 0)
         return NULL;
 
     size_t len = align4(t);
-    size_t chunk_len = HEADER_SIZE + len;
     t_chunk_header *chunk = NULL;
     size_t alloc_type = get_alloc_type(t);
 
     if (base == NULL) {
         if (init_memory_zone()) {
-            printf("Error initializing memory zones\n");
+            printf("Error while initializing memory zones\n");
             return NULL;
         }
     }
@@ -223,7 +219,7 @@ void    *malloc(size_t t) {
     }
     chunk = allocate_chunk(zone, t);
     if (chunk == NULL) {
-        printf("Allocation failed...\n");
+        printf("Error: Allocation failed\n");
         return NULL;
     }
 

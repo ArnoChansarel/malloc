@@ -61,9 +61,8 @@ EXPORT
 void show_alloc_mem() {
 
     printf("\n==== SHOW ALLOCATIONS ==========================\n");
-    printf("Memory Zone Size : %lu | Chunk Header Size : %lu\n-\n", MEMORY_HEADER_SIZE, HEADER_SIZE);
+    printf("Memory Zone Size : %lu   | Chunk Header Size : %lu\nMemory Page Size : %lu\n-\n", MEMORY_HEADER_SIZE, HEADER_SIZE, PAGE_SIZE);
     t_memory_zone   *head_mem = NULL;
-    t_chunk_header  *head_chunk = NULL;
     bool            is_alloc = false;
     bool            free_flag = true;// set to true to display free chunk also
     size_t          client_alloc = 0;
