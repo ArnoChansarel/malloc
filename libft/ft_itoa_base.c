@@ -1,25 +1,32 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_lstnew.c                                        :+:      :+:    :+:   */
+/*   ft_itoa_base.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: achansar <achansar@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/10/10 14:28:19 by achansar          #+#    #+#             */
-/*   Updated: 2022/10/10 14:41:19 by achansar         ###   ########.fr       */
+/*   Created: 2022/10/04 13:38:18 by achansar          #+#    #+#             */
+/*   Updated: 2022/10/14 17:52:09 by achansar         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-t_list	*ft_lstnew(void *content)
+void	ft_itoa_base(size_t nb, char base, char length, bool prefix)
 {
-	t_list	*ele;
+	char	*str;
 
-	ele = malloc(sizeof(t_list));
-	if (!ele)
-		return (NULL);
-	ele->content = content;
-	ele->next = NULL;
-	return (ele);
+	str = "0123456789ABCDEFGHIJKLMNOPQRSTUIVWXYZ";
+	if (nb / base)
+		ft_itoa_base(nb / base, base, length - 1, prefix);
+	else
+	{
+		if (prefix)
+			ft_putstr("0x");
+		while (--length > 0)
+		{
+			ft_putstr("0");
+		}
+	}
+	write(1, &str[nb % base], 1);
 }

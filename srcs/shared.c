@@ -11,17 +11,6 @@ size_t  get_alloc_type(size_t t) {
     }
 }
 
-unsigned long long hex_to_decimal(const void *address) {
-
-    char hex_str[20];
-    snprintf(hex_str, sizeof(hex_str), "%p", address);
-
-    unsigned long long result;
-    sscanf(hex_str, "%llx", &result);
-    
-    return result;
-}
-
 t_memory_zone *get_zone(t_chunk_header *chunk) {
         
     t_chunk_header *head = chunk;
@@ -43,7 +32,6 @@ void init_chunk_header(t_memory_zone *zone, t_chunk_header *chunk, size_t t, t_c
     return;
 }
 
-
 t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t) {
 
     // Is a way to create a free block right after the selcted one and if there's
@@ -58,12 +46,12 @@ t_chunk_header *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t
         size_left_by_alloc = zone->size_total - HEADER_SIZE - new_size;
 
         if (munmap(zone + size_left_by_alloc, size_left_by_alloc)) {
-            printf("Free failed\n");
+            ft_printf("Free failed\n");
             return NULL;
         }
-        zone->size_total -= size_left_by_alloc;
-        head->size -= size_left_by_alloc;
         show_alloc_mem();
+        zone->size_left -= size_left_by_alloc;
+        head->size -= size_left_by_alloc;
         return head;
     }
 
@@ -92,7 +80,7 @@ int check_memory_left(size_t new_size) {
     unsigned long long  real_alloc = 0;
 
     if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
-        printf("Error getting memory limit.\n");
+        ft_printf("Error getting memory limit.\n");
         return 1;
     }
 
@@ -107,7 +95,7 @@ int check_memory_left(size_t new_size) {
     // printf("Memory used : %llu/%llu  | Trying to add a total of %lu\n", real_alloc, limit.rlim_max, new_size);
 
     if (real_alloc + new_size > limit.rlim_max) {
-        printf("Memory limit reached.\n");
+        ft_printf("Memory limit reached.\n");
         return 1;
     }
     return 0;

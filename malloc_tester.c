@@ -3,18 +3,19 @@
 #include "srcs/includes/malloc.h"
 
 // gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
+// gcc -o test3 test3.c -L. -lft_malloc  && /usr/bin/time -l ./test3
 
 int main() {
 
 // TEST SUBJECT -------------------------------------------------------------
 
-    char *ptr1 = (char *)malloc(42);
-    char *ptr2 = (char *)malloc(84);
+    // char *ptr1 = (char *)malloc(42);
+    // char *ptr2 = (char *)malloc(84);
  
-    char *ptr3 = (char *)malloc(3725);
-    char *ptr4 = (char *)malloc(48847);
+    // char *ptr4 = (char *)malloc(48847);
+    // char *ptr3 = (char *)malloc(3725);
 
-    show_alloc_mem();
+    // show_alloc_mem();
 
 // TEST SIMPLE -------------------------------------------------------------
 
@@ -77,22 +78,22 @@ int main() {
 
 // TEST LARGE -------------------------------------------------------------
 
-    // char *ptr1 = (char *)malloc(128);
-    // char *ptr2 = (char *)malloc(3048);
+    char *ptr1 = (char *)malloc(128);
+    char *ptr2 = (char *)malloc(3048);
  
-    // char *ptr3 = (char *)malloc(PAGE_SIZE * 2);
-    // char *ptr4 = (char *)malloc(PAGE_SIZE);
+    char *ptr3 = (char *)malloc(PAGE_SIZE * 2);
+    char *ptr4 = (char *)malloc(PAGE_SIZE);
 
-    // show_alloc_mem();
-    // free(ptr3);
-    // ptr3 = malloc(PAGE_SIZE);// should be before ptr4 after reallocation
+    show_alloc_mem();
+    free(ptr3);
+    ptr3 = malloc(PAGE_SIZE);// should be before ptr4 after reallocation
 
-    // show_alloc_mem();
-    // char *ptr5 = (char *)malloc(PAGE_SIZE); // should be after ptr4 since there's only 
-    //                                         // 4096bytes of diff between ptr3 and ptr4
-    //                                         // (no rrom for headers)
+    show_alloc_mem();
+    char *ptr5 = (char *)malloc(PAGE_SIZE); // should be after ptr4 since there's only 
+                                            // 4096bytes of diff between ptr3 and ptr4
+                                            // (no rrom for headers)
 
-    // show_alloc_mem();
+    show_alloc_mem();
 
 //  TESTS REALLOC ----------------------------------------------------------
 
@@ -103,7 +104,7 @@ int main() {
     // ptr1 = (char *)realloc(ptr1, 256);// bigger, must allocate a new one
     // show_alloc_mem();
 
-    // ptr1 = (char *)realloc(ptr1, 128);// smaller, chop 256 in 128 (96 left + 32 fro chunk header)
+    // ptr1 = (char *)realloc(ptr1, 128);// smaller, chop 256 in 128 (96 left + 32 for chunk header)
     // show_alloc_mem();
 
     // free(ptr1);

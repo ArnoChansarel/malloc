@@ -5,10 +5,9 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stddef.h>
 #include "../../libft/libft.h"
 
-# define TINY_ZONE_SIZE 4
-# define SMALL_ZONE_SIZE 32
 # define align4(x) (((((x)-1)>>2)<<2)+4)
 
 enum zone_type {
@@ -19,11 +18,11 @@ enum zone_type {
 
 # define PAGE_SIZE (size_t)getpagesize()
 # define SMALL_THRESHOLD PAGE_SIZE / 12 //    --> 308bytes
-# define LARGE_THRESHOLD PAGE_SIZE - 1//        --> 4095bytes
-# define TINY_FACTOR 10
-# define SMALL_FACTOR 120
+# define LARGE_THRESHOLD PAGE_SIZE - 1//      --> 4095bytes
+# define TINY_FACTOR 4
+# define SMALL_FACTOR 32
 
-// --> We get 120max allocations for each zones
+// --> We get ~120max allocations for each zones
 
 typedef struct s_chunk_header {
 
@@ -31,7 +30,6 @@ typedef struct s_chunk_header {
     bool                    is_free;
     struct s_chunk_header   *prev;
     struct s_chunk_header   *next;
-    char                    data[];
 
 } t_chunk_header;
 
@@ -60,7 +58,6 @@ void    *realloc(void *ptr, size_t size);
 void    show_alloc_mem();
 
 // SHARED FUNCTIONS
-unsigned long long  hex_to_decimal(const void *address);
 size_t              get_alloc_type(size_t t);
 t_memory_zone       *get_zone(t_chunk_header *chunk);
 t_chunk_header      *reduce_chunk(t_memory_zone *zone, t_chunk_header *head, size_t t);

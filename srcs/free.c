@@ -4,6 +4,8 @@
 
 static void defragment_memory(t_chunk_header *chunk) {
 
+    // Will check prev AND next block. If also free, will aggregate.
+    // Recursive is for small free bloc remaining after a realloc.
 
     size_t new_size = 0;
     bool defragmented = false;
@@ -39,7 +41,7 @@ static void defragment_memory(t_chunk_header *chunk) {
         defragmented = true;
     }
 
-    if (defragmented)// recursive is for small free bloc remaining after a realloc.
+    if (defragmented)
         defragment_memory(chunk);
     return;
 }
@@ -57,17 +59,19 @@ void free(void *ptr) {
 
     if (alloc_type == LARGE) {
         temp_zone = (t_memory_zone *)((char *)chunk - MEMORY_HEADER_SIZE);
-        if (temp_zone->next) {
-            // put zone out of list before freeing it
+        // put zone out of list before freeing it
+        if (temp_zone->prev) {
             temp_zone->prev->next = temp_zone->next;
-            temp_zone->next->prev = temp_zone->prev;
         } else {
-            temp_zone->prev->next = NULL;
+            base = temp_zone->next;
+        }
+        if (temp_zone->next) {
+            temp_zone->next->prev = temp_zone->prev;
         }
 
         size_t size_total = chunk->size + HEADER_SIZE + MEMORY_HEADER_SIZE;
         if (munmap(temp_zone, size_total)) {
-            printf("Free failed\n");
+            ft_printf("Free failed\n");
         }
     } else {
         ft_memset((t_chunk_header *)((char *)chunk + HEADER_SIZE), 0x55, chunk->size);

@@ -1,6 +1,5 @@
 
 #include "../includes/malloc.h"
-#include "libft.h"
 
 
 //
@@ -11,7 +10,6 @@
 // allocate TINY and SMALL when launching
 // create a LARGE zone if needed, and add allocations in it if needed.
 // defragmenting will work only in each zone.
-
 
 t_memory_zone *base = NULL;
 
@@ -32,9 +30,10 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
         return NULL;
     }
 
+    // printf("Creating a zone of size %lu\n", total_size);
     zone = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (zone == MAP_FAILED) {
-        printf("Create Zone failed\n");
+        ft_printf("Create Zone failed\n");
         return NULL;
     }
 
@@ -50,17 +49,12 @@ static t_memory_zone *create_zone(size_t type, size_t large_alloc) {
 
 static int check_large_chunk_place(t_memory_zone *zone, t_memory_zone *head) {
 
-    unsigned long long zone_addr = hex_to_decimal(zone);
-    unsigned long long head_addr = hex_to_decimal(head);
-    unsigned long long head_next_addr = hex_to_decimal(head->next);
-    
-    if (zone_addr > head_addr && zone_addr < head_next_addr) {
-        
+    if ((void*)zone > (void*)head && (void*)zone < (void*)head->next) {
+
         zone->next = head->next;
-        zone->prev = head;
+        zone->prev = head->prev ? head : NULL;
         head->next->prev = zone;
         head->next = zone;
-
         return 1;
     }
     return 0;
@@ -76,7 +70,7 @@ static void     add_zone(t_memory_zone *zone) {
     else {
         head = base;
         while (head->next) {
-            if (zone->type == LARGE && head->next && head->next->type == LARGE && check_large_chunk_place(zone, head)) {
+            if (zone->type == LARGE && head->next && check_large_chunk_place(zone, head)) {
                 return;
             }
             if (!head->next)
@@ -112,6 +106,7 @@ static t_memory_zone *select_zone(size_t alloc_type, size_t t) {
             }
         }  while (head);
     }
+    // printf("No zone found for type %lu\n", alloc_type);
     return NULL;
 }
 
@@ -147,25 +142,6 @@ static t_chunk_header *allocate_chunk(t_memory_zone *zone, size_t t) {
     return (NULL);
 }
 
-static int init_memory_zone() {
-
-    t_memory_zone *zone = NULL;
-
-    zone = create_zone(TINY, 0);
-    if (zone == NULL) {
-        return (1);
-    }
-    add_zone(zone);
-    zone = (t_memory_zone *)((char *)zone->size_total + MEMORY_HEADER_SIZE);
-    zone = create_zone(SMALL, 0);
-    if (zone == NULL) {
-        free(base);
-        return (1);
-    }
-    add_zone(zone);
-    return (0);
-}
-
 EXPORT
 void    *malloc(size_t t) {
 
@@ -176,16 +152,9 @@ void    *malloc(size_t t) {
     t_chunk_header *chunk = NULL;
     size_t alloc_type = get_alloc_type(t);
 
-    if (base == NULL) {
-        if (init_memory_zone()) {
-            printf("Error while initializing memory zones\n");
-            return NULL;
-        }
-    }
-
     t_memory_zone *zone = select_zone(alloc_type, len);
     if (zone == NULL || alloc_type == LARGE) {
-        zone = create_zone(LARGE, len);
+        zone = create_zone(alloc_type, len);
         if (zone == NULL) {
             return NULL;
         }
@@ -193,9 +162,9 @@ void    *malloc(size_t t) {
     }
     chunk = allocate_chunk(zone, t);
     if (chunk == NULL) {
-        printf("Error: Allocation failed\n");
+        ft_printf("Error: Allocation failed\n");
         return NULL;
     }
 
-    return chunk->data;
+    return (void *)((char *)chunk + HEADER_SIZE);
 }

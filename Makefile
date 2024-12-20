@@ -32,7 +32,7 @@ INC = $(addprefix -I , $(PATH_INCLUDE) $(PATH_INCLUDE2))
 
 ##### COMPILER #####
 CC = clang
-CCFLAGS = -Wall -Werror -Wextra -fPIC -fvisibility=hidden -fsanitize=address -g
+CCFLAGS = -Wall -Werror -Wextra -fPIC -fvisibility=hidden
 
 ##### OSTYPE #####
 UNAME := $(shell uname)
@@ -50,16 +50,17 @@ OBJ = $(SRCS:$(SRCPATH)/%.c=$(OBJPATH)/%.o)
 
 ### BUILD ###
 
-all : mk_objdir $(NAME)
-
+all : mk_objdir $(NAME) tester
 
 mk_objdir:
 	@if [ ! -d $(OBJPATH) ]; then mkdir $(OBJPATH); fi
 
+tester:
+	gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
 
 $(NAME): $(LIBFT) $(OBJ)
 	@echo "\n$(END)$(BLUE)# Making $(NAME) #$(END)$(GREY)"
-	$(CC) -shared -o $@ $(OBJ) $(LIBFT) -fsanitize=address
+	$(CC) -shared -o $@ $(OBJ) $(LIBFT)
 	@ln -sf $@ $(L_NAME)
 	@echo "\n$(END)$(GREEN)# $(NAME) is built #$(END)"
 
@@ -75,6 +76,7 @@ clean :
 	@echo "$(END)$(RED)# removing $(NAME) objects #$(END)$(GREY)"
 	@rm -rf $(OBJ)
 	@make clean -C $(LIBFTPATH)
+	@rm malloc_tester
 
 fclean : clean
 	@echo "$(END)$(RED)\n# removing $(NAME) #$(END)$(GREY)"
@@ -85,4 +87,4 @@ fclean : clean
 re : fclean
 	@$(MAKE)
 
-.PHONY : clean fclean re
+.PHONY : all clean fclean re

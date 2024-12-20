@@ -19,7 +19,7 @@ static t_chunk_header *find_alloc(void *ptr) {
         
         head_chunk = head_zone->base_block;
         while (head_chunk) {
-            if (ptr == head_chunk->data)
+            if (ptr == (void *)((char *)head_chunk + HEADER_SIZE))
                 return head_chunk;
             head_chunk = head_chunk->next;
         }
@@ -42,7 +42,7 @@ void *realloc(void *ptr, size_t size) {
 
     t_chunk_header *chunk = find_alloc(ptr);
     if (chunk == NULL) {
-        printf("Error : Pointer hasn't been allocated by Malloc\n");
+        ft_printf("Error : Pointer hasn't been allocated by Malloc\n");
         return NULL;
     }
 
@@ -55,13 +55,13 @@ void *realloc(void *ptr, size_t size) {
         t_memory_zone *zone = get_zone(chunk);
         zone->size_left += HEADER_SIZE + chunk->size;
         reduce_chunk(zone, chunk, size);
-        return chunk->data;
+        return (void *)((char *)chunk + HEADER_SIZE);
     }
     else if ( size > chunk->size) {
         // if must allocate a bigger one somewhere else
         rtr = malloc(size);
-        ft_memmove(rtr, chunk->data, chunk->size);
-        free(chunk->data);
+        ft_memmove(rtr, (void *)((char *)chunk + HEADER_SIZE), chunk->size);
+        free((void *)((char *)chunk + HEADER_SIZE));
         return rtr;
     } 
     return NULL;
