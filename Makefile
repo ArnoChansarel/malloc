@@ -50,13 +50,13 @@ OBJ = $(SRCS:$(SRCPATH)/%.c=$(OBJPATH)/%.o)
 
 ### BUILD ###
 
-all : mk_objdir $(NAME) tester
+all : mk_objdir $(NAME) #tester
 
 mk_objdir:
 	@if [ ! -d $(OBJPATH) ]; then mkdir $(OBJPATH); fi
 
-tester:
-	gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
+# tester:
+# 	gcc -o malloc_tester malloc_tester.c -L. -lft_malloc
 
 $(NAME): $(LIBFT) $(OBJ)
 	@echo "\n$(END)$(BLUE)# Making $(NAME) #$(END)$(GREY)"
@@ -76,7 +76,7 @@ clean :
 	@echo "$(END)$(RED)# removing $(NAME) objects #$(END)$(GREY)"
 	@rm -rf $(OBJ)
 	@make clean -C $(LIBFTPATH)
-	@rm malloc_tester
+	# @rm malloc_tester
 
 fclean : clean
 	@echo "$(END)$(RED)\n# removing $(NAME) #$(END)$(GREY)"
