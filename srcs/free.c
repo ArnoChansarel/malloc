@@ -46,10 +46,31 @@ static void defragment_memory(t_chunk_header *chunk) {
     return;
 }
 
+static int is_malloced(void *ptr) {
+
+    t_memory_zone   *head_zone = base;
+    t_chunk_header  *head_chunk = NULL;
+    void            *in_ptr = NULL;
+
+    while (head_zone) {
+
+        head_chunk = (t_chunk_header *)((char *)head_zone + MEMORY_HEADER_SIZE);
+        while (head_chunk) {
+            in_ptr = (void *)((char *)head_chunk + HEADER_SIZE);
+            if (in_ptr == ptr) {
+                return 0;
+            }
+            head_chunk = head_chunk->next;
+        }
+        head_zone = head_zone->next;
+    }
+    return 1;
+}
+
 EXPORT
 void free(void *ptr) {
 
-    if (ptr == NULL)
+    if (ptr == NULL || is_malloced(ptr))
         return;
 
     t_memory_zone *temp_zone = NULL;
