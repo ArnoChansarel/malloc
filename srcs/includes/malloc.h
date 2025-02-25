@@ -26,8 +26,8 @@ enum zone_type {
 
 typedef struct s_chunk_header {
 
-    size_t                  size;
-    bool                    is_free;
+    uint32_t                size: 31;
+    uint32_t                is_free: 1;
     struct s_chunk_header   *prev;
     struct s_chunk_header   *next;
 
